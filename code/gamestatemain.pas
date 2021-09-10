@@ -5,8 +5,6 @@
   is covered by the LGPL license variant, see the COPYING.txt file.) }
 unit GameStateMain;
 
-{$define allowStream}
-
 interface
 
 uses Classes, Math, CastleDownload, ZipUrls, 
@@ -39,9 +37,7 @@ type
     Button2: TCastleButton;
     Button3: TCastleButton;
     ZipFile: TZipFileSystem;
-    {$ifdef allowStream}
     ZipStream: TZipFileSystem;
-    {$endif}
     procedure DoButton1Click(Sender: TObject);
     procedure DoButton2Click(Sender: TObject);
     procedure DoButton3Click(Sender: TObject);
@@ -114,11 +110,9 @@ begin
   inherited;
   DesignUrl := 'castle-data:/gamestatemain.castle-user-interface';
   ZipFile := TZipFileSystem.Create(Self, 'castle-data:/Tree.zip');
-  {$ifdef allowStream}
   TestStream := Download('castle-data:/Tree.zip');
   ZipStream := TZipFileSystem.Create(Self, TestStream, 'castle-data:/Tree.zip');
   FreeAndNil(TestStream);
-  {$endif}
 end;
 
 procedure TStateMain.Start;
@@ -138,10 +132,6 @@ begin
   Button1.OnClick := @DoButton1Click;
   Button2.OnClick := @DoButton2Click;
   Button3.OnClick := @DoButton3Click;
-
-  {$ifndef allowStream}
-  Button3.Caption := 'Stream load disabled - def allowStream';
-  {$endif}
 end;
 
 procedure TStateMain.Update(const SecondsPassed: Single; var HandleInput: Boolean);
@@ -213,9 +203,7 @@ end;
 
 procedure TStateMain.DoButton3Click(Sender: TObject);
 begin
-  {$ifdef allowStream}
   LoadModel(ZipStream.Protocol + '/Tree/models/tree.gltf');
-  {$endif}
 end;
 
 end.
