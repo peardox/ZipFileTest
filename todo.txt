@@ -1,0 +1,49 @@
+Optimization notes from @Michalis
+=================================
+Which is a bit unoptimal (I would suppose to have functions in TUnZipper to 1. open stream, 2. read file X, 3. read file Y, 4. close stream).
+
+I see you can actually make it -- by making a descendant of TUnZipper. The OpenInput and friends are protected (not private). See how they do this:
+
+procedure TUnZipper.UnZipAllFiles;
+Var
+  Item : TFullZipFileEntry;
+  I : integer; //Really QWord but limited to FEntries.Count
+  AllFiles : Boolean;
+Begin
+  FTerminated:=False;
+  FUnZipping:=True;
+  Try
+    AllFiles:=(FFiles.Count=0);
+    OpenInput;
+    Try
+      ReadZipDirectory;
+      FTotPos := 0;
+      FTotSize := CalcTotalSize(AllFiles);
+      i:=0;
+      While (I<FEntries.Count) and not Terminated do
+        begin
+        Item:=FEntries[i];
+        if AllFiles or IsMatch(Item) then
+          UnZipOneFile(Item);
+        inc(I);
+        end;
+      if Assigned(FOnProgressEx) and not Terminated then
+        FOnProgressEx(Self, FTotPos, FTotSize);
+    Finally
+      CloseInput;
+    end;
+  finally
+    FUnZipping:=False;
+  end;
+end;
+
+
+So IMO you want to "deconstruct" this. 
+
+- You don't want to call Examine, UnZipFile, UnZipFiles, UnZipAllFiles at all.
+
+- You want to call OpenInput once when the ZIP is first opened, CloseInput once when it's not needed anymore at all.
+
+- You want to implement a method like UnZipFileFromOpenStream that contains the "meat" of TUnZipper.UnZipAllFiles above, i.e. move in an existing stream, and call UnZipOneFile on it.
+
+This is assuming you want to be optimal, i.e. not read the ZIP file many times (read the ZIP each time for a new file).
