@@ -30,13 +30,14 @@ type
 
   TZipFileSystem = class(TComponent)
   private
-    fProtocol: String;              // Name of protocol - zip-data-NN
-    fZipFile: String;               // Zip filename if created as file
-    fZipStream: TMemoryStream;      // Zip stream if created as stream
-    fUseStream: Boolean;            // Is this Zip a stream or file?
-    fFriendlyName: String;          // A more friendly name (extension removed)
-    fUnzip: TUnZipper;              // The UnZip component
-    fZipFiles: TStringList;         // Files in Zip also used to hold output stream
+    fProtocol: String;                  // Name of protocol - zip-data-NN
+    fZipFile: String;                   // Zip filename if created as file
+    fZipStream: TMemoryStream;          // Zip stream if created as stream
+    fZipTransientStream: TMemoryStream; // Zip stream copy for InputStream
+    fUseStream: Boolean;                // Is this Zip a stream or file?
+    fFriendlyName: String;              // A more friendly name (extension removed)
+    fUnzip: TUnZipper;                  // The UnZip component
+    fZipFiles: TStringList;             // Files in Zip also used to hold output stream
     procedure DoStartZipFile(Sender: TObject; const AFile: string);
     procedure DoEndZipFile(Sender: TObject; const Ratio: Double);
     procedure DoDoneOutZipStream(Sender: TObject; var AStream: TStream; AItem: TFullZipFileEntry);
@@ -232,9 +233,9 @@ begin
     begin  // fZipStream is a TMemoryStream
       if not(Assigned(AStream)) and Assigned(fZipStream) then
         begin
-          if not(fZipStream.Position = 0) then
-            fZipStream.Position := 0;
-          AStream := fZipStream;
+          fZipTransientStream := TMemoryStream.Create;
+          fZipTransientStream.LoadFromStream(fZipStream);
+          AStream := fZipTransientStream;
         end;
     end;
 end;
@@ -245,11 +246,6 @@ begin
     WriteLnLog('DoCloseInputStream : AStream = nil')
   else
     WriteLnLog('DoCloseInputStream : AStream = ' + AStream.ClassName);
-  if fUseStream then
-    begin
-      if not(fZipStream.Position = 0) then
-        fZipStream.Position:=0;
-    end;
 end;
 
 function TZipFileSystem.GetStream(const AUrl: string): TStream;
