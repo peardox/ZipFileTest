@@ -21,7 +21,7 @@ unit ZipUrls;
 interface
 
 uses SysUtils, Classes, Zipper,
-  CastleLog, CastleUtils,
+  CastleLog, CastleUtils, URIParser,
   CastleFilesUtils, CastleDownload,
   CastleStringUtils, CastleURIUtils;
 
@@ -264,13 +264,15 @@ function TZipFileSystem.ReadZip(const AUrl: string; out MimeType: string): TStre
 var
   I: Integer;
   FileInZip: String;
+  U: TURI;
 begin
   Result := nil;
 
   WriteLnLog('ReadZip ' + AUrl);
 
-  FileInZip := PrefixRemove('/', URIDeleteProtocol(AUrl), false);
-
+  U := ParseURI(AUrl);
+  FileInZip := PrefixRemove('/', U.Path + U.Document, false);
+  
   if fZipFiles.Find(FileInZip, I) then
     begin
       { If the requested file hasn't been extracted yet then do so }
