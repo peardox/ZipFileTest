@@ -290,7 +290,9 @@ begin
           WriteLnLog('Returning stream');
           Result := fZipFiles.Objects[I] as TMemoryStream;
           fZipFiles.Objects[I] := nil;        
-         end;
+         end
+       else
+         raise EZipError.Create('fZipFiles.Objects[I] = nil');
     end
   else
     begin
