@@ -5,7 +5,7 @@
   is covered by the LGPL license variant, see the COPYING.txt file.) }
 unit GameStateMain;
 
-//  {$define allowStream}
+{$define allowStream}
 
 interface
 
