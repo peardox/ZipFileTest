@@ -288,8 +288,9 @@ begin
         begin
           MimeType := URIMimeType(FileInZip);
           WriteLnLog('Returning stream');
-          Result := TMemoryStream(fZipFiles.Objects[I]);
-        end;
+          Result := fZipFiles.Objects[I] as TMemoryStream;
+          fZipFiles.Objects[I] := nil;        
+         end;
     end
   else
     begin
