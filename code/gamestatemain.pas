@@ -7,7 +7,7 @@ unit GameStateMain;
 
 interface
 
-uses Classes, Math, CastleDownload, ZipUrls, 
+uses Classes, Math, CastleDownload, ZipUrls, CastleTimeUtils, CastleLog,
   CastleVectors, CastleUIState, CastleComponentSerialize, CastleScene,
   CastleViewport, CastleUIControls, CastleControls, CastleKeysMouse;
 
@@ -16,6 +16,7 @@ type
   TCastleSceneHelper = class helper for TCastleScene
   public
     function Normalize: TVector3;
+    function IsVisible: Boolean;
   end;
 
   { TCastleViewportHelper }
@@ -45,13 +46,15 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     procedure Start; override;
+    procedure Render; override;
     procedure Update(const SecondsPassed: Single; var HandleInput: Boolean); override;
     function Press(const Event: TInputPressRelease): Boolean; override;
   end;
 
 var
   StateMain: TStateMain;
-
+  AppTime: Int64;
+  
 implementation
 
 uses SysUtils;
@@ -80,6 +83,11 @@ begin
           end;
       end;
     end;
+end;
+
+function TCastleSceneHelper.IsVisible: Boolean;
+begin
+  Result := IsVisibleNow;
 end;
 
 { TCastleViewportHelper }
@@ -166,8 +174,25 @@ begin
   }
 end;
 
+procedure TStateMain.Render;
+begin
+  inherited;
+  if not(AppTime = 0) then
+    begin
+      if Assigned(Scene1) and Scene1.IsVisible then
+        begin
+          AppTime := CastleGetTickCount64 - AppTime;
+          WriteLnLog('Load time : ' + IntToStr(AppTime));
+          AppTime := 0;
+        end;
+    end;
+end;
+
 procedure TStateMain.LoadModel(AUrl: String);
 begin
+  // Time the load
+  AppTime := CastleGetTickCount64;
+
   if not(Scene1 = nil) then
     FreeAndNil(Scene1);
   Scene1 := TCastleScene.Create(Self);
