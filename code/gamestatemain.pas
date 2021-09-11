@@ -110,8 +110,8 @@ begin
   inherited;
   DesignUrl := 'castle-data:/gamestatemain.castle-user-interface';
   ZipFile := TZipFileSystem.Create(Self, 'castle-data:/Tree.zip');
-  TestStream := Download('castle-data:/Tree.zip');
-  ZipStream := TZipFileSystem.Create(Self, TestStream, 'castle-data:/Tree.zip');
+  TestStream := Download('castle-data:/kira_and_killer_queen.zip');
+  ZipStream := TZipFileSystem.Create(Self, TestStream, 'castle-data:/kira_and_killer_queen.zip');
   FreeAndNil(TestStream);
 end;
 
@@ -193,7 +193,7 @@ end;
 
 procedure TStateMain.DoButton1Click(Sender: TObject);
 begin
-  LoadModel('castle-data:/Tree/models/tree.gltf');
+  LoadModel('castle-data:/oblique.glb');
 end;
 
 procedure TStateMain.DoButton2Click(Sender: TObject);
@@ -203,7 +203,7 @@ end;
 
 procedure TStateMain.DoButton3Click(Sender: TObject);
 begin
-  LoadModel(ZipStream.Protocol + '/Tree/models/tree.gltf');
+  LoadModel(ZipStream.Protocol + '/scene.gltf');
 end;
 
 end.
