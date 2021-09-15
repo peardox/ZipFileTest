@@ -147,28 +147,16 @@ begin
     if not(fRawFiles = nil) then
       FreeAndNil(fRawFiles);
     fZipFiles := TStringList.Create;
+    fZipFiles.OwnsObjects := True;
     fRawFiles := TStringList.Create;
+    fRawFiles.OwnsObjects := True;
     fZipFiles.Sorted := True;
     fZipFiles.Duplicates := dupError;
     fUnzip.Examine;
     for I := 0 to fUnzip.Entries.Count - 1 do
       begin
-        if fUnzip.Entries[I].IsDirectory then
-          begin
-            fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-            WriteLnLog('Ignoring Directory : ' + fUnzip.Entries[I].ArchiveFileName);
-          end
-        else if fUnzip.Entries[I].IsLink then
-          begin
-            fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-            raise EZipError.Create('Zip contains Symlinks');
-          end
-        else
-          begin
-            fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
-            fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-            WriteLnLog('Adding File : ' + fUnzip.Entries[I].ArchiveFileName);
-          end;
+        fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
+        fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
       end;
     end
   else
@@ -220,13 +208,17 @@ begin
     if not(fRawFiles = nil) then
       FreeAndNil(fRawFiles);
     fZipFiles := TStringList.Create;
+    fZipFiles.OwnsObjects := True;
     fRawFiles := TStringList.Create;
+    fRawFiles.OwnsObjects := True;
     fZipFiles.Sorted := True;
     fZipFiles.Duplicates := dupError;
     fUnzip.Examine;
     for I := 0 to fUnzip.Entries.Count - 1 do
-      fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
-      fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
+      begin
+        fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
+        fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
+      end;
     end;
 end;
 
@@ -373,6 +365,7 @@ end;
 
 destructor TZipFileSystem.Destroy;
 begin
+  fZipTransientStream := nil;
   FreeAndNil(fZipStream);
   FreeAndNil(fRawFiles);
   FreeAndNil(fZipFiles);
@@ -397,8 +390,6 @@ begin
     DeleteFile(AZipFilename);
 
   NewZipper := TZipper.Create;
-//  NewZipper.OnStartFile:=@DoStartFile;
-//  NewZipper.OnEndFile:=@DoEndFile;
   NewZipper.FileName := AZipFileName;
   try
     for i := 0 to RawFiles.Count -1 do
@@ -425,7 +416,7 @@ begin
 
     Result := true;
   finally
-    NewZipper.Free;
+    FreeAndNil(NewZipper);
   end;
 end;
 
