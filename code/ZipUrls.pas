@@ -366,6 +366,7 @@ end;
 destructor TZipFileSystem.Destroy;
 begin
   fZipTransientStream := nil;
+//  fZipStream := nil;
   FreeAndNil(fZipStream);
   FreeAndNil(fRawFiles);
   FreeAndNil(fZipFiles);
@@ -381,6 +382,7 @@ var
   i: Integer;
   fe: TZipFileEntry;
   ne: TZipFileEntry;
+  s: TStream;
 begin
   Result := false;
   if not(fUseStream) then
@@ -395,16 +397,37 @@ begin
     for i := 0 to RawFiles.Count -1 do
       begin
         fe := RawFiles.Objects[i] as TZipFileEntry;
-        WriteLnLog('Trying to add ' + fe.ArchiveFileName + ' to ' + AZipFilename);
+        WriteLnLog(IntToStr(i) + ' : Trying to add ' + ExcludeTrailingPathDelimiter(fe.ArchiveFileName) + ' to ' + AZipFilename);
         ne := NewZipper.Entries.Add as TZipFileEntry;
         if fe.IsDirectory then
-          ne.Stream := nil
+          begin
+            ne.Stream := TStringStream.Create('');
+            ne.ArchiveFileName := ExcludeTrailingPathDelimiter(fe.ArchiveFileName);
+            ne.UTF8ArchiveFileName := ExcludeTrailingPathDelimiter(fe.ArchiveFileName);
+            if not(fe.DiskFileName = EmptyStr) then
+              ne.DiskFileName := ExcludeTrailingPathDelimiter(fe.DiskFileName)
+            else
+              ne.DiskFileName := ne.ArchiveFileName;
+            if not(fe.UTF8DiskFileName = EmptyStr) then
+              ne.UTF8DiskFileName := ExcludeTrailingPathDelimiter(fe.UTF8DiskFileName)
+            else
+              ne.UTF8DiskFileName := ne.DiskFileName;
+            if i = 300 then
+              begin
+                WriteLnLog(fe.ArchiveFileName);
+                WriteLnLog(fe.DiskFileName);
+                WriteLnLog(fe.UTF8ArchiveFileName);
+                WriteLnLog(fe.UTF8DiskFileName);
+              end;
+          end
         else
-          ne.Stream := GetStream(fe.ArchiveFileName);
-        ne.ArchiveFileName := fe.ArchiveFileName;
-        ne.UTF8ArchiveFileName := fe.UTF8ArchiveFileName;
-        ne.DiskFileName := fe.DiskFileName;
-        ne.UTF8DiskFileName := fe.UTF8DiskFileName;
+          begin
+            ne.Stream := GetStream(fe.ArchiveFileName);
+            ne.ArchiveFileName := fe.ArchiveFileName;
+            ne.UTF8ArchiveFileName := fe.UTF8ArchiveFileName;
+            ne.DiskFileName := fe.DiskFileName;
+            ne.UTF8DiskFileName := fe.UTF8DiskFileName;
+          end;
         ne.Size := fe.Size;
         ne.DateTime := fe.DateTime;
         ne.OS := fe.OS;
@@ -416,6 +439,15 @@ begin
 
     Result := true;
   finally
+    for i := 0 to NewZipper.Entries.Count -1 do
+      begin
+        fe := NewZipper.Entries[i] as TZipFileEntry;
+        if not(fe.Stream = nil) then
+          begin
+            s := fe.Stream;
+            FreeAndNil(s);
+          end;
+      end;
     FreeAndNil(NewZipper);
   end;
 end;

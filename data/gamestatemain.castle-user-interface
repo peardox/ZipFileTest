@@ -185,7 +185,7 @@
         {
           "$$ClassName" : "TCastleButton",
           "AutoSizeWidth" : false,
-          "Caption" : "Experimental ReZip square_shift.zip -> experiment.zip",
+          "Caption" : "ReZip square_shift.zip (no subdirs)",
           "CustomBackgroundDisabled" : {
             "$$ClassName" : "TCastleImagePersistent"
           },
@@ -203,6 +203,31 @@
           },
           "Name" : "Button4",
           "VerticalAnchorDelta" : -1.1700000000000000E+002,
+          "VerticalAnchorParent" : "vpTop",
+          "VerticalAnchorSelf" : "vpTop",
+          "Width" : 6.0000000000000000E+002
+        },
+        {
+          "$$ClassName" : "TCastleButton",
+          "AutoSizeWidth" : false,
+          "Caption" : "ReZip stylized_hand_painted_scene.zip (has subdir)",
+          "CustomBackgroundDisabled" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundFocused" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundNormal" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundPressed" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Image" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Name" : "Button5",
+          "VerticalAnchorDelta" : -1.5600000000000000E+002,
           "VerticalAnchorParent" : "vpTop",
           "VerticalAnchorSelf" : "vpTop",
           "Width" : 6.0000000000000000E+002

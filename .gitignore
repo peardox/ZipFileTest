@@ -35,7 +35,7 @@ backup/
 *.bak
 lib/
 castle-engine-output/
-# data/
+testzips/
 
 # Application bundle for Mac OS
 *.app/

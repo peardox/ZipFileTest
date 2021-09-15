@@ -38,12 +38,14 @@ type
     Button2: TCastleButton;
     Button3: TCastleButton;
     Button4: TCastleButton;
+    Button5: TCastleButton;
     ZipFile: TZipFileSystem;
     ZipStream: TZipFileSystem;
     procedure DoButton1Click(Sender: TObject);
     procedure DoButton2Click(Sender: TObject);
     procedure DoButton3Click(Sender: TObject);
     procedure DoButton4Click(Sender: TObject);
+    procedure DoButton5Click(Sender: TObject);
     procedure LoadModel(AUrl: String);
   public
     constructor Create(AOwner: TComponent); override;
@@ -120,10 +122,13 @@ begin
   inherited;
   InitializeLog();
   DesignUrl := 'castle-data:/gamestatemain.castle-user-interface';
+  // Create most things at start
   ZipFile := TZipFileSystem.Create(Self, 'castle-data:/Tree.zip');
   TestStream := Download('castle-data:/kira_and_killer_queen.zip');
   ZipStream := TZipFileSystem.Create(Self, TestStream, 'castle-data:/kira_and_killer_queen.zip');
   FreeAndNil(TestStream);
+  if not(DirectoryExists('testzips')) then
+    CreateDir('testzips');
 end;
 
 procedure TStateMain.Start;
@@ -140,11 +145,13 @@ begin
   Button2 := DesignedComponent('Button2') as TCastleButton;
   Button3 := DesignedComponent('Button3') as TCastleButton;
   Button4 := DesignedComponent('Button4') as TCastleButton;
+  Button5 := DesignedComponent('Button5') as TCastleButton;
   
   Button1.OnClick := @DoButton1Click;
   Button2.OnClick := @DoButton2Click;
   Button3.OnClick := @DoButton3Click;
   Button4.OnClick := @DoButton4Click;
+  Button5.OnClick := @DoButton5Click;
 end;
 
 procedure TStateMain.Update(const SecondsPassed: Single; var HandleInput: Boolean);
@@ -247,15 +254,34 @@ procedure TStateMain.DoButton4Click(Sender: TObject);
 var
   ExperimentalZipFile: TZipFileSystem;
 begin
-  try
-    if ReWriteZipFile('castle-data:/square_shift.zip', 'experiment.zip') then
-      begin
-        ExperimentalZipFile := TZipFileSystem.Create(Self, 'experiment.zip');
+  if not(FileExists('testzips/out1.zip')) then
+    ReWriteZipFile('castle-data:/square_shift.zip', 'testzips/out1.zip');
+  if (FileExists('testzips/out1.zip')) then
+    begin
+      try
+        ExperimentalZipFile := TZipFileSystem.Create(Self, 'testzips/out1.zip');
         LoadModel(ExperimentalZipFile.Protocol + '/scene.gltf');
+      finally
+        FreeAndNil(ExperimentalZipFile);
       end;
-  finally
-    FreeAndNil(ExperimentalZipFile);
-  end;
+    end;
+end;
+
+procedure TStateMain.DoButton5Click(Sender: TObject);
+var
+  ExperimentalZipFile: TZipFileSystem;
+begin
+  if not(FileExists('testzips/out2.zip')) then
+    ReWriteZipFile('castle-data:/stylized_hand_painted_scene.zip', 'testzips/out2.zip');
+  if (FileExists('testzips/out2.zip')) then
+    begin
+      try
+        ExperimentalZipFile := TZipFileSystem.Create(Self, 'testzips/out2.zip');
+        LoadModel(ExperimentalZipFile.Protocol + '/scene.gltf');
+      finally
+        FreeAndNil(ExperimentalZipFile);
+      end;
+    end;
 end;
 
 end.
