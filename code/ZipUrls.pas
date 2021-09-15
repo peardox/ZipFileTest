@@ -16,6 +16,9 @@
 }
 
 { Game initialization and logic. }
+// {$define verboseLogging}
+// {$define deleteWhileTesting}
+
 unit ZipUrls;
 
 interface
@@ -45,6 +48,7 @@ type
     procedure DoCreateOutZipStream(Sender: TObject; var AStream: TStream; AItem: TFullZipFileEntry);
     procedure DoOpenInputStream(Sender: TObject; var AStream: TStream);
     procedure DoCloseInputStream(Sender: TObject; var AStream: TStream);
+    procedure CommonSetup;
     procedure SetZipFile(const AUrl: String);
     procedure SetZipStream(const AStream: TStream; const AUrl: String = '');
   public
@@ -96,6 +100,28 @@ begin
     end;
 end;
 
+procedure TZipFileSystem.CommonSetup;
+var
+  I: Integer;
+begin
+  if not(fZipFiles = nil) then
+    FreeAndNil(fZipFiles);
+  if not(fRawFiles = nil) then
+    FreeAndNil(fRawFiles);
+  fZipFiles := TStringList.Create;
+  fZipFiles.OwnsObjects := True;
+  fRawFiles := TStringList.Create;
+  fRawFiles.OwnsObjects := True;
+  fZipFiles.Sorted := True;
+  fZipFiles.Duplicates := dupError;
+  fUnzip.Examine;
+  for I := 0 to fUnzip.Entries.Count - 1 do
+    begin
+      fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
+      fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
+    end;
+end;
+
 procedure TZipFileSystem.SetZipStream(const AStream: TStream; const AUrl: String = '');
 var
   I: Integer;
@@ -138,26 +164,11 @@ begin
         Inc(I);
       until false;
 
-    fProtocol := P;
-    RegisterUrlProtocol(fProtocol, @ReadZip, nil);
-    WriteLnLog('Registered Protocol ' + fProtocol + ' for ' + fZipFile);
+      fProtocol := P;
+      RegisterUrlProtocol(fProtocol, @ReadZip, nil);
+      WriteLnLog('Registered Protocol ' + fProtocol + ' for ' + fZipFile);
 
-    if not(fZipFiles = nil) then
-      FreeAndNil(fZipFiles);
-    if not(fRawFiles = nil) then
-      FreeAndNil(fRawFiles);
-    fZipFiles := TStringList.Create;
-    fZipFiles.OwnsObjects := True;
-    fRawFiles := TStringList.Create;
-    fRawFiles.OwnsObjects := True;
-    fZipFiles.Sorted := True;
-    fZipFiles.Duplicates := dupError;
-    fUnzip.Examine;
-    for I := 0 to fUnzip.Entries.Count - 1 do
-      begin
-        fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
-        fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-      end;
+      CommonSetup;
     end
   else
     raise EZipError.Create('Attempt to open nil Zip Stream');
@@ -170,7 +181,7 @@ var
   F: String;
   E: SizeInt;
 begin
-  if not(fZipFile = AUrl) then
+  if not(AUrl = '') then
     begin
       fZipFile := URIToFilenameSafe(AUrl);
 
@@ -198,38 +209,29 @@ begin
         Inc(I);
       until false;
 
-    fProtocol := P;
-    RegisterUrlProtocol(fProtocol, @ReadZip, nil);
-    WriteLnLog('Registered Protocol ' + fProtocol + ' for ' + fZipFile);
+      fProtocol := P;
+      RegisterUrlProtocol(fProtocol, @ReadZip, nil);
+      WriteLnLog('Registered Protocol ' + fProtocol + ' for ' + fZipFile);
 
-    fUnzip.FileName := fZipFile;
-    if not(fZipFiles = nil) then
-      FreeAndNil(fZipFiles);
-    if not(fRawFiles = nil) then
-      FreeAndNil(fRawFiles);
-    fZipFiles := TStringList.Create;
-    fZipFiles.OwnsObjects := True;
-    fRawFiles := TStringList.Create;
-    fRawFiles.OwnsObjects := True;
-    fZipFiles.Sorted := True;
-    fZipFiles.Duplicates := dupError;
-    fUnzip.Examine;
-    for I := 0 to fUnzip.Entries.Count - 1 do
-      begin
-        fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
-        fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-      end;
-    end;
+      fUnzip.FileName := fZipFile;
+      CommonSetup;
+    end
+  else
+    raise EZipError.Create('Attempt to open Zip File with no filename');
 end;
 
 procedure TZipFileSystem.DoStartZipFile(Sender: TObject; const AFile: string);
 begin
+  {$ifdef verboseLogging}
   WritelnLog('UnZip : DoStartZipFile : AFile = ' + AFile);
+  {$endif}
 end;
 
 procedure TZipFileSystem.DoEndZipFile(Sender: TObject; const Ratio: Double);
 begin
+  {$ifdef verboseLogging}
   WritelnLog('UnZip : DoEndZipFile : Ratio = ' + FloatToStr(Ratio));
+  {$endif}
 end;
 
 procedure TZipFileSystem.DoCreateOutZipStream(Sender: TObject; var AStream: TStream;
@@ -237,7 +239,9 @@ procedure TZipFileSystem.DoCreateOutZipStream(Sender: TObject; var AStream: TStr
 var
   I: Integer;
 begin
+  {$ifdef verboseLogging}
   WritelnLog('UnZip : DoCreateOutZipStream : ' + AItem.ArchiveFileName);
+  {$endif}
   if fZipFiles.Find(AItem.ArchiveFileName, I) then
     begin
       AStream := TMemorystream.Create;
@@ -255,17 +259,21 @@ end;
 procedure TZipFileSystem.DoDoneOutZipStream(Sender: TObject; var AStream: TStream;
   AItem: TFullZipFileEntry);
 begin
+  {$ifdef verboseLogging}
   WritelnLog('UnZip : DoDoneOutZipStream : ' + AItem.ArchiveFileName);
+  {$endif}
   if not(AStream.Position = 0) then
     AStream.Position:=0;
 end;
 
 procedure TZipFileSystem.DoOpenInputStream(Sender: TObject; var AStream: TStream);
 begin
+  {$ifdef verboseLogging}
   if AStream = nil then
     WriteLnLog('DoOpenInputStream : AStream = nil')
   else
     WriteLnLog('DoOpenInputStream : AStream = ' + AStream.ClassName);
+  {$endif}
   if fUseStream then // fUseStream = was created from stream not file
     begin  // fZipStream is a TMemoryStream
       if not(Assigned(AStream)) and Assigned(fZipStream) then
@@ -279,10 +287,12 @@ end;
 
 procedure TZipFileSystem.DoCloseInputStream(Sender: TObject; var AStream: TStream);
 begin
+  {$ifdef verboseLogging}
   if AStream = nil then
     WriteLnLog('DoCloseInputStream : AStream = nil')
   else
     WriteLnLog('DoCloseInputStream : AStream = ' + AStream.ClassName);
+  {$endif}
 end;
 
 function TZipFileSystem.GetStream(const AUrl: string): TStream;
@@ -305,7 +315,9 @@ var
 begin
   Result := nil;
 
+  {$ifdef verboseLogging}
   WriteLnLog('ReadZip ' + AUrl);
+  {$endif}
 
   U := ParseURI(AUrl);
   FileInZip := PrefixRemove('/', U.Path + U.Document, false);
@@ -322,7 +334,9 @@ begin
       if not(fZipFiles.Objects[I] = nil) then
         begin
           MimeType := URIMimeType(FileInZip);
+          {$ifdef verboseLogging}
           WriteLnLog('Returning stream');
+          {$endif}
           Result := fZipFiles.Objects[I] as TMemoryStream;
           fZipFiles.Objects[I] := nil;        
          end
@@ -388,8 +402,10 @@ begin
   if not(fUseStream) then
     raise EZipError.Create('EZipError : RePackZipFile needs to be passed a stream based zip file');
   
+  {$ifdef deleteWhileTesting}
   if FileExists(AZipFilename) then
     DeleteFile(AZipFilename);
+  {$endif}
 
   NewZipper := TZipper.Create;
   NewZipper.FileName := AZipFileName;
@@ -397,7 +413,9 @@ begin
     for i := 0 to RawFiles.Count -1 do
       begin
         fe := RawFiles.Objects[i] as TZipFileEntry;
+        {$ifdef verboseLogging}
         WriteLnLog(IntToStr(i) + ' : Trying to add ' + ExcludeTrailingPathDelimiter(fe.ArchiveFileName) + ' to ' + AZipFilename);
+        {$endif}
         ne := NewZipper.Entries.Add as TZipFileEntry;
         if fe.IsDirectory then
           begin
@@ -412,13 +430,6 @@ begin
               ne.UTF8DiskFileName := ExcludeTrailingPathDelimiter(fe.UTF8DiskFileName)
             else
               ne.UTF8DiskFileName := ne.DiskFileName;
-            if i = 300 then
-              begin
-                WriteLnLog(fe.ArchiveFileName);
-                WriteLnLog(fe.DiskFileName);
-                WriteLnLog(fe.UTF8ArchiveFileName);
-                WriteLnLog(fe.UTF8DiskFileName);
-              end;
           end
         else
           begin
