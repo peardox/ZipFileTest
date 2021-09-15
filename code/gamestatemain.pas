@@ -45,15 +45,12 @@ type
     procedure DoButton3Click(Sender: TObject);
     procedure DoButton4Click(Sender: TObject);
     procedure LoadModel(AUrl: String);
-    procedure DoEndFile(Sender : TObject; Const Ratio : Double);
-    procedure DoStartFile(Sender : TObject; Const AFileName : String);
   public
     constructor Create(AOwner: TComponent); override;
     procedure Start; override;
     procedure Render; override;
     procedure Update(const SecondsPassed: Single; var HandleInput: Boolean); override;
     function  Press(const Event: TInputPressRelease): Boolean; override;
-    function  RePackZipFile(const AZipFilename: String; AZipFileSystem: TZipFileSystem): Boolean;
   end;
 
 var
@@ -248,76 +245,17 @@ end;
 
 procedure TStateMain.DoButton4Click(Sender: TObject);
 var
-  TestStream: TStream;
-  ExperimentalZipStream: TZipFileSystem;
   ExperimentalZipFile: TZipFileSystem;
 begin
-  TestStream := Download('castle-data:/square_shift.zip');
-  ExperimentalZipStream := TZipFileSystem.Create(Self, TestStream, 'castle-data:/square_shift.zip');
-  FreeAndNil(TestStream);
-
-  RePackZipFile('experiment.zip', ExperimentalZipStream);
-  FreeAndNil(ExperimentalZipStream);
-  
-  ExperimentalZipFile := TZipFileSystem.Create(Self, 'experiment.zip');
-  LoadModel(ExperimentalZipFile.Protocol + '/scene.gltf');
-  FreeAndNil(ExperimentalZipFile);
-end;
-
-function TStateMain.RePackZipFile(const AZipFilename: String; AZIpFileSystem: TZipFileSystem): Boolean;
-var
-  OurZipper: TZipper;
-  i: Integer;
-  fe: TZipFileEntry;
-  ne: TZipFileEntry;
-begin
-  Result := false;
-  if FileExists(AZipFilename) then
-    DeleteFile(AZipFilename);
-
-  OurZipper := TZipper.Create;
-  OurZipper.OnStartFile:=@DoStartFile;
-  OurZipper.OnEndFile:=@DoEndFile;
-  OurZipper.FileName := AZipFileName;
   try
-    for i := 0 to AZipFileSystem.RawFiles.Count -1 do
+    if ReWriteZipFile('castle-data:/square_shift.zip', 'experiment.zip') then
       begin
-        fe := AZipFileSystem.RawFiles.Objects[i] as TZipFileEntry;
-        WriteLnLog('Trying to add ' + fe.ArchiveFileName + ' to ' + AZipFilename);
-        ne := OurZipper.Entries.Add as TZipFileEntry;
-        if fe.IsDirectory then
-          ne.Stream := nil
-        else
-          ne.Stream := AZipFileSystem.GetStream(fe.ArchiveFileName);
-        ne.ArchiveFileName := fe.ArchiveFileName;
-        ne.UTF8ArchiveFileName := fe.UTF8ArchiveFileName;
-        ne.DiskFileName := fe.DiskFileName;
-        ne.UTF8DiskFileName := fe.UTF8DiskFileName;
-        ne.Size := fe.Size;
-        ne.DateTime := fe.DateTime;
-        ne.OS := fe.OS;
-        ne.Attributes := fe.Attributes;
-        ne.CompressionLevel := fe.CompressionLevel;
+        ExperimentalZipFile := TZipFileSystem.Create(Self, 'experiment.zip');
+        LoadModel(ExperimentalZipFile.Protocol + '/scene.gltf');
       end;
-
-    WriteLnLog(' -> Start Zipping Files');
-    OurZipper.ZipAllFiles;
-    WriteLnLog(' -> Finished Zipping Files');
-    Result := true;
   finally
-    OurZipper.Free;
+    FreeAndNil(ExperimentalZipFile);
   end;
-end; 
-
-procedure TStateMain.DoEndFile(Sender : TObject; Const Ratio : Double);
-begin
-  WriteLnLog(Sender.ClassName + ' - Ratio : ' + FloatToStr(Ratio));
 end;
-
-procedure TStateMain.DoStartFile(Sender : TObject; Const AFileName : String);
-begin
-  WriteLnLog(Sender.ClassName + ' - File : ' + AFileName);
-end;
-
 
 end.

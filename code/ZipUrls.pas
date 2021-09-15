@@ -52,6 +52,7 @@ type
     function GetStream(const AUrl: string; out MimeType: string): TStream;
     function ReadZip(const AUrl: string; out MimeType: string): TStream;
     function getProtocol: String;
+    function RePackZipFile(const AZipFilename: String): Boolean;
     constructor Create(AOwner: TComponent); override;
     constructor Create(AOwner: TComponent; const AUrl: string);
     constructor Create(AOwner: TComponent; const AStream: TStream; const AUrl: string = '');
@@ -63,7 +64,24 @@ type
     property RawFiles: TStringList read fRawFiles;
   end;
 
+function ReWriteZipFile(const AZipFileIn: String;const AZipFileOut: String): Boolean;
+
 implementation
+
+{ Utility Functions ------------------------------------------------------- }
+
+function ReWriteZipFile(const AZipFileIn: String;const AZipFileOut: String): Boolean;
+var
+  InFileStream: TStream;
+  CopyFileStream: TZipFileSystem;
+begin
+  InFileStream := Download(AZipFileIn);
+  CopyFileStream := TZipFileSystem.Create(nil, InFileStream, AZipFileIn);
+  FreeAndNil(InFileStream);
+
+  Result := CopyFileStream.RePackZipFile(AZipFileOut);
+  FreeAndNil(CopyFileStream);
+end;
 
 { TZipFileSystem ---------------------------------------------------------- }
 
@@ -362,6 +380,53 @@ begin
   WriteLnLog('UnRegistering Protocol ' + fProtocol);
   UnregisterUrlProtocol(fProtocol);
   inherited;
+end;
+
+function TZipFileSystem.RePackZipFile(const AZipFilename: String): Boolean;
+var
+  NewZipper: TZipper;
+  i: Integer;
+  fe: TZipFileEntry;
+  ne: TZipFileEntry;
+begin
+  Result := false;
+  if not(fUseStream) then
+    raise EZipError.Create('EZipError : RePackZipFile needs to be passed a stream based zip file');
+  
+  if FileExists(AZipFilename) then
+    DeleteFile(AZipFilename);
+
+  NewZipper := TZipper.Create;
+//  NewZipper.OnStartFile:=@DoStartFile;
+//  NewZipper.OnEndFile:=@DoEndFile;
+  NewZipper.FileName := AZipFileName;
+  try
+    for i := 0 to RawFiles.Count -1 do
+      begin
+        fe := RawFiles.Objects[i] as TZipFileEntry;
+        WriteLnLog('Trying to add ' + fe.ArchiveFileName + ' to ' + AZipFilename);
+        ne := NewZipper.Entries.Add as TZipFileEntry;
+        if fe.IsDirectory then
+          ne.Stream := nil
+        else
+          ne.Stream := GetStream(fe.ArchiveFileName);
+        ne.ArchiveFileName := fe.ArchiveFileName;
+        ne.UTF8ArchiveFileName := fe.UTF8ArchiveFileName;
+        ne.DiskFileName := fe.DiskFileName;
+        ne.UTF8DiskFileName := fe.UTF8DiskFileName;
+        ne.Size := fe.Size;
+        ne.DateTime := fe.DateTime;
+        ne.OS := fe.OS;
+        ne.Attributes := fe.Attributes;
+        ne.CompressionLevel := fe.CompressionLevel;
+      end;
+
+    NewZipper.ZipAllFiles;
+
+    Result := true;
+  finally
+    NewZipper.Free;
+  end;
 end;
 
 end.
