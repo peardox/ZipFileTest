@@ -75,11 +75,11 @@ var
   InFileStream: TStream;
   CopyFileStream: TZipFileSystem;
 begin
-  InFileStream := Download(AZipFileIn);
+  InFileStream := Download(URIToFilenameSafe(AZipFileIn));
   CopyFileStream := TZipFileSystem.Create(nil, InFileStream, AZipFileIn);
   FreeAndNil(InFileStream);
 
-  Result := CopyFileStream.RePackZipFile(AZipFileOut);
+  Result := CopyFileStream.RePackZipFile(URIToFilenameSafe(AZipFileOut));
   FreeAndNil(CopyFileStream);
 end;
 
