@@ -130,7 +130,7 @@
           "Name" : "Button1",
           "VerticalAnchorParent" : "vpTop",
           "VerticalAnchorSelf" : "vpTop",
-          "Width" : 5.5000000000000000E+002
+          "Width" : 6.0000000000000000E+002
         },
         {
           "$$ClassName" : "TCastleButton",
@@ -155,7 +155,7 @@
           "VerticalAnchorDelta" : -3.9000000000000000E+001,
           "VerticalAnchorParent" : "vpTop",
           "VerticalAnchorSelf" : "vpTop",
-          "Width" : 5.5000000000000000E+002
+          "Width" : 6.0000000000000000E+002
         },
         {
           "$$ClassName" : "TCastleButton",
@@ -180,7 +180,32 @@
           "VerticalAnchorDelta" : -7.8000000000000000E+001,
           "VerticalAnchorParent" : "vpTop",
           "VerticalAnchorSelf" : "vpTop",
-          "Width" : 5.5000000000000000E+002
+          "Width" : 6.0000000000000000E+002
+        },
+        {
+          "$$ClassName" : "TCastleButton",
+          "AutoSizeWidth" : false,
+          "Caption" : "Experimental ReZip square_shift.zip -> experiment.zip",
+          "CustomBackgroundDisabled" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundFocused" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundNormal" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "CustomBackgroundPressed" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Image" : {
+            "$$ClassName" : "TCastleImagePersistent"
+          },
+          "Name" : "Button4",
+          "VerticalAnchorDelta" : -1.1700000000000000E+002,
+          "VerticalAnchorParent" : "vpTop",
+          "VerticalAnchorSelf" : "vpTop",
+          "Width" : 6.0000000000000000E+002
         }
       ]
     },

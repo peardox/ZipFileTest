@@ -16,6 +16,7 @@
 grab_*
 AndroidSigningProperties.txt
 *Copy*
+experiment.zip
 
 # Heap trace
 heap.trc

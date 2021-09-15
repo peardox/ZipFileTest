@@ -38,7 +38,6 @@ type
     fFriendlyName: String;              // A more friendly name (extension removed)
     fUnzip: TUnZipper;                  // The UnZip component
     fZipFiles: TStringList;             // Files in Zip also used to hold output stream
-    fRawFiles: TStringList;             // Files in Zip also used to hold output stream
     procedure DoStartZipFile(Sender: TObject; const AFile: string);
     procedure DoEndZipFile(Sender: TObject; const Ratio: Double);
     procedure DoDoneOutZipStream(Sender: TObject; var AStream: TStream; AItem: TFullZipFileEntry);
@@ -60,7 +59,6 @@ type
     property Protocol: String read getProtocol;
     property FriendlyName: String read fFriendlyName write fFriendlyName;
     property Files: TStringList read fZipFiles;
-    property RawFiles: TStringList read fRawFiles;
   end;
 
 implementation
@@ -126,31 +124,14 @@ begin
 
     if not(fZipFiles = nil) then
       FreeAndNil(fZipFiles);
-    if not(fRawFiles = nil) then
-      FreeAndNil(fRawFiles);
     fZipFiles := TStringList.Create;
-    fRawFiles := TStringList.Create;
     fZipFiles.Sorted := True;
     fZipFiles.Duplicates := dupError;
     fUnzip.Examine;
     for I := 0 to fUnzip.Entries.Count - 1 do
       begin
-        if fUnzip.Entries[I].IsDirectory then
-          begin
-            fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-            WriteLnLog('Ignoring Directory : ' + fUnzip.Entries[I].ArchiveFileName);
-          end
-        else if fUnzip.Entries[I].IsLink then
-          begin
-            fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-            raise EZipError.Create('Zip contains Symlinks');
-          end
-        else
-          begin
-            fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
-            fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
-            WriteLnLog('Adding File : ' + fUnzip.Entries[I].ArchiveFileName);
-          end;
+        fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
+        WriteLnLog('Found in Zip : ' + fUnzip.Entries[I].ArchiveFileName);
       end;
     end
   else
@@ -199,16 +180,12 @@ begin
     fUnzip.FileName := fZipFile;
     if not(fZipFiles = nil) then
       FreeAndNil(fZipFiles);
-    if not(fRawFiles = nil) then
-      FreeAndNil(fRawFiles);
     fZipFiles := TStringList.Create;
-    fRawFiles := TStringList.Create;
     fZipFiles.Sorted := True;
     fZipFiles.Duplicates := dupError;
     fUnzip.Examine;
     for I := 0 to fUnzip.Entries.Count - 1 do
       fZipFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, nil);
-      fRawFiles.AddObject(fUnzip.Entries[I].ArchiveFileName, fUnzip.Entries[I] as TZipFileEntry);
     end;
 end;
 
@@ -252,10 +229,6 @@ end;
 
 procedure TZipFileSystem.DoOpenInputStream(Sender: TObject; var AStream: TStream);
 begin
-  if AStream = nil then
-    WriteLnLog('DoOpenInputStream : AStream = nil')
-  else
-    WriteLnLog('DoOpenInputStream : AStream = ' + AStream.ClassName);
   if fUseStream then // fUseStream = was created from stream not file
     begin  // fZipStream is a TMemoryStream
       if not(Assigned(AStream)) and Assigned(fZipStream) then
@@ -355,8 +328,8 @@ end;
 
 destructor TZipFileSystem.Destroy;
 begin
-  FreeAndNil(fZipStream);
-  FreeAndNil(fRawFiles);
+//  FreeAndNil(fZipTransientStream);
+//  FreeAndNil(fZipStream);
   FreeAndNil(fZipFiles);
   FreeAndNil(fUnzip);
   WriteLnLog('UnRegistering Protocol ' + fProtocol);

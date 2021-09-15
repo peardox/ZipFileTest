@@ -7,7 +7,7 @@ unit GameStateMain;
 
 interface
 
-uses Classes, Math, CastleDownload, ZipUrls, CastleTimeUtils, CastleLog,
+uses Classes, Math, CastleDownload, Zipper, ZipUrls, CastleTimeUtils, CastleLog,
   CastleVectors, CastleUIState, CastleComponentSerialize, CastleScene,
   CastleViewport, CastleUIControls, CastleControls, CastleKeysMouse;
 
@@ -37,18 +37,23 @@ type
     Button1: TCastleButton;
     Button2: TCastleButton;
     Button3: TCastleButton;
+    Button4: TCastleButton;
     ZipFile: TZipFileSystem;
     ZipStream: TZipFileSystem;
     procedure DoButton1Click(Sender: TObject);
     procedure DoButton2Click(Sender: TObject);
     procedure DoButton3Click(Sender: TObject);
+    procedure DoButton4Click(Sender: TObject);
     procedure LoadModel(AUrl: String);
+    procedure DoEndFile(Sender : TObject; Const Ratio : Double);
+    procedure DoStartFile(Sender : TObject; Const AFileName : String);
   public
     constructor Create(AOwner: TComponent); override;
     procedure Start; override;
     procedure Render; override;
     procedure Update(const SecondsPassed: Single; var HandleInput: Boolean); override;
-    function Press(const Event: TInputPressRelease): Boolean; override;
+    function  Press(const Event: TInputPressRelease): Boolean; override;
+    function  RePackZipFile(const AZipFilename: String; AZipFileSystem: TZipFileSystem): Boolean;
   end;
 
 var
@@ -116,6 +121,7 @@ var
   TestStream: TStream;
 begin
   inherited;
+  InitializeLog();
   DesignUrl := 'castle-data:/gamestatemain.castle-user-interface';
   ZipFile := TZipFileSystem.Create(Self, 'castle-data:/Tree.zip');
   TestStream := Download('castle-data:/kira_and_killer_queen.zip');
@@ -136,10 +142,12 @@ begin
   Button1 := DesignedComponent('Button1') as TCastleButton;
   Button2 := DesignedComponent('Button2') as TCastleButton;
   Button3 := DesignedComponent('Button3') as TCastleButton;
+  Button4 := DesignedComponent('Button4') as TCastleButton;
   
   Button1.OnClick := @DoButton1Click;
   Button2.OnClick := @DoButton2Click;
   Button3.OnClick := @DoButton3Click;
+  Button4.OnClick := @DoButton4Click;
 end;
 
 procedure TStateMain.Update(const SecondsPassed: Single; var HandleInput: Boolean);
@@ -202,6 +210,13 @@ begin
   Scene1.Normalize;
   Scene1.PrepareResources([prRenderSelf], True, Viewport1.PrepareParams);
   Scene1.HeadlightOn := True;
+  
+  WriteLnLog('AnimationsList.Count : ' + IntToStr(Scene1.AnimationsList.Count));
+  if Scene1.AnimationsList.Count > 0 then
+    begin
+      Scene1.PlayAnimation(Scene1.AnimationsList[0], True);
+      WriteLnLog('Playing Animation : ' + Scene1.AnimationsList[0]);
+    end;
 
   Viewport1.Items.MainScene := Scene1;
   Viewport1.Items.UseHeadlight := hlMainScene;
@@ -213,7 +228,7 @@ begin
   }
   Viewport1.ViewFromRadius(sqrt(2), 0.81625, (2 * Pi * Random));
 
-  LabelLoaded.Caption := 'Tree loaded from ' + AUrl;
+  LabelLoaded.Caption := 'Model loaded from ' + AUrl;
 end;
 
 procedure TStateMain.DoButton1Click(Sender: TObject);
@@ -230,5 +245,79 @@ procedure TStateMain.DoButton3Click(Sender: TObject);
 begin
   LoadModel(ZipStream.Protocol + '/scene.gltf');
 end;
+
+procedure TStateMain.DoButton4Click(Sender: TObject);
+var
+  TestStream: TStream;
+  ExperimentalZipStream: TZipFileSystem;
+  ExperimentalZipFile: TZipFileSystem;
+begin
+  TestStream := Download('castle-data:/square_shift.zip');
+  ExperimentalZipStream := TZipFileSystem.Create(Self, TestStream, 'castle-data:/square_shift.zip');
+  FreeAndNil(TestStream);
+
+  RePackZipFile('experiment.zip', ExperimentalZipStream);
+  FreeAndNil(ExperimentalZipStream);
+  
+  ExperimentalZipFile := TZipFileSystem.Create(Self, 'experiment.zip');
+  LoadModel(ExperimentalZipFile.Protocol + '/scene.gltf');
+  FreeAndNil(ExperimentalZipFile);
+end;
+
+function TStateMain.RePackZipFile(const AZipFilename: String; AZIpFileSystem: TZipFileSystem): Boolean;
+var
+  OurZipper: TZipper;
+  i: Integer;
+  fe: TZipFileEntry;
+  ne: TZipFileEntry;
+begin
+  Result := false;
+  if FileExists(AZipFilename) then
+    DeleteFile(AZipFilename);
+
+  OurZipper := TZipper.Create;
+  OurZipper.OnStartFile:=@DoStartFile;
+  OurZipper.OnEndFile:=@DoEndFile;
+  OurZipper.FileName := AZipFileName;
+  try
+    for i := 0 to AZipFileSystem.RawFiles.Count -1 do
+      begin
+        fe := AZipFileSystem.RawFiles.Objects[i] as TZipFileEntry;
+        WriteLnLog('Trying to add ' + fe.ArchiveFileName + ' to ' + AZipFilename);
+        ne := OurZipper.Entries.Add as TZipFileEntry;
+        if fe.IsDirectory then
+          ne.Stream := nil
+        else
+          ne.Stream := AZipFileSystem.GetStream(fe.ArchiveFileName);
+        ne.ArchiveFileName := fe.ArchiveFileName;
+        ne.UTF8ArchiveFileName := fe.UTF8ArchiveFileName;
+        ne.DiskFileName := fe.DiskFileName;
+        ne.UTF8DiskFileName := fe.UTF8DiskFileName;
+        ne.Size := fe.Size;
+        ne.DateTime := fe.DateTime;
+        ne.OS := fe.OS;
+        ne.Attributes := fe.Attributes;
+        ne.CompressionLevel := fe.CompressionLevel;
+      end;
+
+    WriteLnLog(' -> Start Zipping Files');
+    OurZipper.ZipAllFiles;
+    WriteLnLog(' -> Finished Zipping Files');
+    Result := true;
+  finally
+    OurZipper.Free;
+  end;
+end; 
+
+procedure TStateMain.DoEndFile(Sender : TObject; Const Ratio : Double);
+begin
+  WriteLnLog(Sender.ClassName + ' - Ratio : ' + FloatToStr(Ratio));
+end;
+
+procedure TStateMain.DoStartFile(Sender : TObject; Const AFileName : String);
+begin
+  WriteLnLog(Sender.ClassName + ' - File : ' + AFileName);
+end;
+
 
 end.
